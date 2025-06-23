@@ -18,29 +18,21 @@
     <ClCompile Include="program.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Joelbu537\C-FlexList-Library\FlexList.c">
-      <Filter>Resource Files</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <CopyFileToFolders Include="..\..\..\..\OneDrive\SDL2-2.30.8\lib\x64\SDL2.dll">
-      <Filter>Resource Files</Filter>
-    </CopyFileToFolders>
-    <CopyFileToFolders Include="..\..\..\..\OneDrive\SDL2_mixer-2.8.0\lib\x64\SDL2_mixer.dll">
-      <Filter>Resource Files</Filter>
-    </CopyFileToFolders>
-    <CopyFileToFolders Include="..\..\..\..\OneDrive\SDL2_ttf-2.22.0\lib\x64\SDL2_ttf.dll">
-      <Filter>Resource Files</Filter>
-    </CopyFileToFolders>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\Joelbu537\C-FlexList-Library\FlexList.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Font Include="..\x64\Release\CascadiaMono-Regular.ttf">
       <Filter>Resource Files</Filter>
     </Font>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="SDL2_ttf.dll">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="SDL2.dll">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="SDL2_mixer.dll">
+      <Filter>Source Files</Filter>
+    </None>
   </ItemGroup>
 </Project>
