@@ -6,7 +6,6 @@
 #include <SDL.h>
 #include <SDL_mixer.h>
 #include <SDL_ttf.h>
-#include "C:\Users\jork-\source\repos\Joelbu537\C-FlexList-Library\FlexList.h"
 
 #define FONT_SIZE 30
 #define PADDING 10
