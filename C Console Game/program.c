@@ -7,7 +7,9 @@
 #include <SDL_mixer.h>
 #include <SDL_ttf.h>
 #include "C:\Users\jork-\source\repos\Joelbu537\C-FlexList-Library\FlexList.h"
+
 #define FONT_SIZE 30
+#define PADDING 10
 
 struct Item;
 typedef struct Item {
@@ -19,7 +21,12 @@ typedef struct Text {
 	SDL_Rect rect;
 	SDL_Surface* surface;
 	SDL_Texture* texture;
+	char* text; // Optional: Store the text for reference
 } Text;
+
+
+// Zwei Texte, einer für Konsole, einer für Text
+// Erster Text enthält \n, um Zeilenumbrüche zu erzeugen
 
 
 void ShowUtf8MessageBox(const char* utf8Message, const wchar_t* title) {
@@ -49,6 +56,14 @@ Text GetRect(SDL_Renderer* renderer, TTF_Font* font, char* text) {
 	SDL_Rect titleRect = { 0, 0, titleWidth, titleHeight };
 
 	Text result = { titleRect, textSurface, TitleTexture };
+	result.text = malloc(strlen(text) + 1);
+	if (result.text == NULL) {
+		SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Memory allocation failed for text");
+		SDL_DestroyTexture(TitleTexture);
+		SDL_FreeSurface(textSurface);
+		return (Text) { 0 };
+	}
+	strcpy(result.text, text);
 	return result;
 }
 
@@ -85,8 +100,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	SDL_snprintf(fontPath, basePathSize, "%s%s", basePath, "CascadiaMono-Regular.ttf");
 	SDL_Log("Font Path: %s", fontPath);
 
-	TTF_Font* fontAptos = TTF_OpenFont(fontPath, FONT_SIZE);
-	if (fontAptos == NULL) {
+	TTF_Font* fontCascadia = TTF_OpenFont(fontPath, FONT_SIZE);
+	if (fontCascadia == NULL) {
 		SDL_LogError(SDL_LOG_CATEGORY_ERROR, "TTF_OpenFont Error: %s", TTF_GetError());
 		ShowUtf8MessageBox(TTF_GetError(), L"TTF_OpenFont Error");
 		return 1;
@@ -116,7 +131,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Memory allocation failed for text lines");
 		SDL_DestroyRenderer(renderer);
 		SDL_DestroyWindow(window);
-		TTF_CloseFont(fontAptos);
+		TTF_CloseFont(fontCascadia);
 		free(fontPath);
 		SDL_free(basePath);
 		TTF_Quit();
@@ -125,20 +140,26 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	}
 	for (unsigned short i = 0; i < maxLines; i++)
 	{
-		textLines[i].rect.x = 10;
+		textLines[i].rect.x = PADDING;
 		textLines[i].rect.y = i * FONT_SIZE;
-		textLines[i].rect.w = width - 30; // 10px padding on each side
+		textLines[i].rect.w = width - (PADDING * 2); // 10px padding on each side
 		textLines[i].rect.h = FONT_SIZE;
 		textLines[i].surface = NULL;
 		textLines[i].texture = NULL;
 	}
 	SDL_Log("Text lines initialized: %d lines", maxLines);
 
+	int maxWidth = width - PADDING * 2;
+	int charWidth;
+	TTF_SizeText(fontCascadia, "A", &charWidth, NULL);
+	int maxCharactersPerLine = maxWidth / charWidth;
+	SDL_Log("Max characters per line: %d", maxCharactersPerLine);
+
 	/* Debug	*/
-	for (unsigned short i = 0; i < maxLines; i++) {
+	for (unsigned short i = 0; i < maxLines - 3; i++) {
 		char buffer[64];
 		SDL_snprintf(buffer, sizeof(buffer), "Line %d", i + 1);
-		Text text = GetRect(renderer, fontAptos, buffer);
+		Text text = GetRect(renderer, fontCascadia, buffer);
 		textLines[i].surface = text.surface;
 		textLines[i].texture = text.texture;
 		textLines[i].rect.w = text.rect.w;
@@ -147,7 +168,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			free(textLines);
 			SDL_DestroyRenderer(renderer);
 			SDL_DestroyWindow(window);
-			TTF_CloseFont(fontAptos);
+			TTF_CloseFont(fontCascadia);
 			free(fontPath);
 			SDL_free(basePath);
 			TTF_Quit();
@@ -162,7 +183,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	SDL_Event event;
 
 	char* titleText = "Press [ENTER] to continue...";
-	SDL_Surface* TitleSurface = TTF_RenderText_Solid(fontAptos, titleText, (SDL_Color) { 255, 255, 255, 255 });
+	SDL_Surface* TitleSurface = TTF_RenderText_Solid(fontCascadia, titleText, (SDL_Color) { 255, 255, 255, 255 });
 	SDL_Texture* TitleTexture = SDL_CreateTextureFromSurface(renderer, TitleSurface);
 	if (TitleTexture == NULL) {
 		SDL_LogError(SDL_LOG_CATEGORY_ERROR, "SDL_CreateTextureFromSurface Error: %s", SDL_GetError());
@@ -170,7 +191,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		applicationRunning = false;
 	}
 	int titleWidth, titleHeight;
-	TTF_SizeText(fontAptos, titleText, &titleWidth, &titleHeight);
+	TTF_SizeText(fontCascadia, titleText, &titleWidth, &titleHeight);
 	int titleX, titleY;
 	titleX = (width - titleWidth) / 2;
 	titleY = (height - titleHeight) / 2;
@@ -191,6 +212,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 						SDL_Log("Menu exited, starting game...");
 					}
 					else if (event.key.keysym.sym == SDLK_ESCAPE) {
+						SDL_Log("User initiated exit.");
 						applicationRunning = false;
 					}
 				}
@@ -204,6 +226,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 				}
 				else if (event.type == SDL_KEYDOWN) {
 					if (event.key.keysym.sym == SDLK_ESCAPE) {
+						SDL_Log("User paused the game.");
 						isMenu = true;
 					}
 				}
@@ -219,7 +242,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
-	TTF_CloseFont(fontAptos);
+	TTF_CloseFont(fontCascadia);
 	free(fontPath);
 	SDL_free(basePath);
 	TTF_Quit();
