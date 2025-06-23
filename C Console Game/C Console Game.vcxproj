@@ -149,9 +149,15 @@
     </Font>
   </ItemGroup>
   <ItemGroup>
-    <None Include="SDL2.dll" />
-    <None Include="SDL2_mixer.dll" />
-    <None Include="SDL2_ttf.dll" />
+    <None Include="SDL2.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="SDL2_mixer.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="SDL2_ttf.dll">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
