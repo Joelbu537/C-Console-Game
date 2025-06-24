@@ -234,7 +234,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			}
 			
 			// Overflow-Text verstecken
-			SDL_RenderDrawRect(renderer, &inputPanelRect);
+			SDL_RenderFillRect(renderer, &inputPanelRect);
 
 			//Draw ConsoleInput
 			if (strlen(ConsoleInput) > 0) {
