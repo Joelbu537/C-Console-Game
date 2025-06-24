@@ -189,9 +189,21 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 						SDL_Log("Backspace pressed");
 					    ConsoleInput[strlen(ConsoleInput) - 1] = '\0';
 					}
+					if(event.key.keysym.sym == SDLK_RETURN || event.key.keysym.sym == SDLK_KP_ENTER) {
+						SDL_Log("Enter pressed");
+						if (strlen(ConsoleInput) > 2) {
+							char* refinedInput = calloc(CONSOLE_INPUT_MAX_SIZE, 1);
+							strcat_s(refinedInput, CONSOLE_INPUT_MAX_SIZE, ConsoleInput);
+							strcat_s(refinedInput, CONSOLE_INPUT_MAX_SIZE, "\n");
+							if (WriteText(refinedInput) != 0) {
+								SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to write text to console.");
+							}
+							strcpy_s(ConsoleInput, CONSOLE_INPUT_MAX_SIZE, "> ");
+							free(refinedInput);
+						}
+					}
 				}
 				if (event.type == SDL_TEXTINPUT) {
-					SDL_Log("Text input: %s", event.text.text);
 					size_t free = CONSOLE_INPUT_MAX_SIZE - strlen(ConsoleInput) - 1;
 					if (strlen(event.text.text) <= free) {
 						strcat_s(ConsoleInput, CONSOLE_INPUT_MAX_SIZE, event.text.text);
