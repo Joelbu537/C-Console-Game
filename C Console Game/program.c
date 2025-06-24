@@ -8,21 +8,8 @@
 #include <SDL_ttf.h>
 
 #define FONT_SIZE 30
-#define PADDING 10
+#define PADDING 20
 #define MIN_REQUIRED_LINES 5
-
-struct Item;
-typedef struct Item {
-	byte weight;
-	char* name;
-} Item;
-struct Text;
-typedef struct Text {
-	SDL_Rect rect;
-	SDL_Surface* surface;
-	SDL_Texture* texture;
-	char* text; // Optional: Store the text for reference
-} Text;
 
 static char* ConsoleText;
 static char* ConsoleInput;
@@ -74,6 +61,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 	bool applicationRunning = true;
 	bool isMenu = true;
+
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER) != 0) {
 		MessageBox(NULL, SDL_GetError(), "SDL_Init Error", MB_OK | MB_ICONERROR);
 		return 1;
@@ -93,9 +81,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	else {
 		SDL_Log("Base Path: %s", basePath);
 	}
-
 	size_t basePathSize = strlen(basePath) + 32;
-
 	char* fontPath = malloc(basePathSize);
 	if (fontPath == NULL) {
 		MessageBox(NULL, L"Memory allocation failed for font path", L"Error", MB_OK | MB_ICONERROR);
@@ -103,7 +89,6 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	}
 	SDL_snprintf(fontPath, basePathSize, "%s%s", basePath, "CascadiaMono-Regular.ttf");
 	SDL_Log("Font Path: %s", fontPath);
-
 	TTF_Font* fontCascadia = TTF_OpenFont(fontPath, FONT_SIZE);
 	if (fontCascadia == NULL) {
 		SDL_LogError(SDL_LOG_CATEGORY_ERROR, "TTF_OpenFont Error: %s", TTF_GetError());
@@ -123,7 +108,6 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		SDL_DestroyWindow(window);
 		return 1;
 	}
-
 	int width, height;
 	SDL_GetWindowSize(window, &width, &height);
 	SDL_Log("Window Size: %d x %d", width, height);
@@ -142,7 +126,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	unsigned short maxCharsPerLine = width / charWidth;
 	ConsoleTextMaxSize = maxCharsPerLine * maxUsableLines + 64;
 	ConsoleText = calloc(ConsoleTextMaxSize, 1);
-	ConsoleInput = malloc(CONSOLE_INPUT_MAX_SIZE);
+	ConsoleInput = calloc(CONSOLE_INPUT_MAX_SIZE, 1);
 	
 	SDL_Event event;
 
@@ -154,19 +138,21 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		SDL_FreeSurface(TitleSurface);
 		applicationRunning = false;
 	}
-	int titleWidth, titleHeight;
-	TTF_SizeText(fontCascadia, titleText, &titleWidth, &titleHeight);
-	int titleX, titleY;
-	titleX = (width - titleWidth) / 2;
-	titleY = (height - titleHeight) / 2;
-	SDL_Rect titleRect = { titleX, titleY, titleWidth, titleHeight };
+	SDL_Rect titleRect = { (width - TitleSurface->w) / 2, (height - TitleSurface->h) / 2, TitleSurface->w, TitleSurface->h };
 	SDL_Rect inputPanelRect = { 0, FONT_SIZE * maxUsableLines, width, FONT_SIZE * 3 };
 	SDL_Log("Title rendering prepared");
-	if (WriteText("Hallo Welt!\nDas ist ein Testtet!\n") != 0) {
+	if (WriteText("Hallo Welt!\nDas ist ein Testtext!\n") != 0) {
 		SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Something went wrong.");
 	}
 
+	if (ConsoleInput != NULL) {
+		strcpy_s(ConsoleInput, CONSOLE_INPUT_MAX_SIZE, "> ");
+	}
+	else {
+		SDL_LogError(SDL_LOG_CATEGORY_ERROR, "ConsoleInput was not initialised!");
+	}
 
+	SDL_StartTextInput();
 	while (applicationRunning) {
 		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 		SDL_RenderClear(renderer);
@@ -189,33 +175,34 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			SDL_RenderCopy(renderer, TitleTexture, NULL, &titleRect);
 		}
 		else {
+			// Handle input
 			while (SDL_PollEvent(&event)) {
 				if (event.type == SDL_QUIT) {
 					applicationRunning = false;
 				}
-				else if (event.type == SDL_KEYDOWN) {
+			     if (event.type == SDL_KEYDOWN) {
 					if (event.key.keysym.sym == SDLK_ESCAPE) {
 						SDL_Log("User paused the game.");
 						isMenu = true;
 					}
+					if (event.key.keysym.sym == SDLK_BACKSPACE && strlen(ConsoleInput) > 2) {
+						SDL_Log("Backspace pressed");
+					    ConsoleInput[strlen(ConsoleInput) - 1] = '\0';
+					}
+				}
+				if (event.type == SDL_TEXTINPUT) {
+					SDL_Log("Text input: %s", event.text.text);
+					size_t free = CONSOLE_INPUT_MAX_SIZE - strlen(ConsoleInput) - 1;
+					if (strlen(event.text.text) <= free) {
+						strcat_s(ConsoleInput, CONSOLE_INPUT_MAX_SIZE, event.text.text);
+					}
+					else {
+						SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Input overflow");
+					}
+
 				}
 			}
 			// Draw ConsoleText
-			SDL_Surface* textSurface = TTF_RenderText_Solid(fontCascadia, ConsoleText, (SDL_Color) { 255, 255, 255, 255 });
-			if (textSurface == NULL) {
-				SDL_LogError(SDL_LOG_CATEGORY_ERROR, "TTF_RenderText_Solid Error: %s", TTF_GetError());
-				ShowUtf8MessageBox(TTF_GetError(), L"TTF_RenderText_Solid Error");
-				applicationRunning = false;
-				break;
-			}
-			SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
-			if (TitleTexture == NULL) {
-				SDL_LogError(SDL_LOG_CATEGORY_ERROR, "SDL_CreateTextureFromSurface Error: %s", SDL_GetError());
-				SDL_FreeSurface(textSurface);
-				ShowUtf8MessageBox(SDL_GetError(), L"SDL_CreateTextureFromSurface Error");
-				applicationRunning = false;
-				break;
-			}
 			char* copy = _strdup(ConsoleText); // Dupliziert ConsoleText
 			if (copy) {
 				char* context = NULL;
@@ -236,12 +223,19 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			
 			// Overflow-Text verstecken
 			SDL_RenderDrawRect(renderer, &inputPanelRect);
-			//Input drawen
 
+			//Draw ConsoleInput
+			if (strlen(ConsoleInput) > 0) {
+				SDL_Surface* inputSurf = TTF_RenderText_Solid(fontCascadia, ConsoleInput, (SDL_Color) { 255, 255, 255, 255 });
+				SDL_Texture* inputTex = SDL_CreateTextureFromSurface(renderer, inputSurf);
+				SDL_Rect inputRect = { PADDING, (maxLines - 2) * FONT_SIZE, inputSurf->w, inputSurf->h };
+				SDL_RenderCopy(renderer, inputTex, NULL, &inputRect);
+			}
 		}
 		SDL_RenderPresent(renderer);
 	}
 
+	SDL_StopTextInput();
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
 	TTF_CloseFont(fontCascadia);
