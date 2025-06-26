@@ -10,16 +10,22 @@
 #define FONT_SIZE 30
 #define PADDING 20
 #define MIN_REQUIRED_LINES 5
+#define DEFAULT_TEXT_COLOR { 255, 255, 255, 255 }
 
 static char* ConsoleText;
 static char* ConsoleInput;
 static size_t ConsoleTextMaxSize;
+static SDL_Color ConsoleTextColor = { 255, 255, 255, 255 };
 #define CONSOLE_INPUT_MAX_SIZE 128
 
-
-// Zwei Texte, einer für Konsole, einer für Text
-// Erster Text enthält \n, um Zeilenumbrüche zu erzeugen
-
+/*static void SetColorText(SDL_Color color) {
+	SDL_Log("SetColorText called");
+	ConsoleTextColor = color;
+}
+void ResetColorText(void) {
+	SDL_Log("ResetColorText called");
+	ConsoleTextColor = (SDL_Color)DEFAULT_TEXT_COLOR;
+}*/
 
 void ShowUtf8MessageBox(const char* utf8Message, const wchar_t* title) {
     int size = MultiByteToWideChar(CP_UTF8, 0, utf8Message, -1, NULL, 0);
@@ -195,9 +201,16 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 							char* refinedInput = calloc(CONSOLE_INPUT_MAX_SIZE, 1);
 							strcat_s(refinedInput, CONSOLE_INPUT_MAX_SIZE, ConsoleInput);
 							strcat_s(refinedInput, CONSOLE_INPUT_MAX_SIZE, "\n");
+							FreeText();
 							if (WriteText(refinedInput) != 0) {
 								SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Failed to write text to console.");
+								ShowUtf8MessageBox("Failed to write text to console.", L"Error");
 							}
+							char* command = refinedInput + 2; // Skip "> "
+							char* test = calloc(strlen(command) + 2, 1);
+							strcpy_s(test, strlen(command) + 2, command);
+							strcat_s(test, strlen(command) + 2, "\n");
+							WriteText(test);
 							strcpy_s(ConsoleInput, CONSOLE_INPUT_MAX_SIZE, "> ");
 							free(refinedInput);
 						}
@@ -221,7 +234,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 				char* line = strtok_s(copy, "\n", &context);
 				int y = PADDING;
 				while (line) {
-					SDL_Surface* surf = TTF_RenderText_Solid(fontCascadia, line, (SDL_Color) {255, 255, 255, 255});
+					SDL_Surface* surf = TTF_RenderText_Solid(fontCascadia, line, ConsoleTextColor);
 					SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer, surf);
 					SDL_Rect rect = { PADDING, y, surf->w, surf->h };
 					SDL_RenderCopy(renderer, tex, NULL, &rect);
